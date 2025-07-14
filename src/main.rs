@@ -1,6 +1,6 @@
-fn main() {
-    let file = std::fs::read_to_string("./src/file.txt").expect("Error: file couldnt be found");
-    println!("file: \n{file}");
+use crate::assembler::assemble;
+pub mod assembler;
 
-    println!("Hello, world!");
+fn main() {
+    assemble("./src/file.txt");
 }
