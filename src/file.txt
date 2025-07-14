@@ -1,6 +1,14 @@
 main:
   v2 = 0x300// comment
   // this is a comment
-  jump main // this
+  jump label // this
 
 label:
+  load v2
+  call function
+
+
+function:
+  v3 = v4
+  clear
+

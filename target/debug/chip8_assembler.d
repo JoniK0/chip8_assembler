@@ -1,1 +1,1 @@
-/home/erjon/Documents/rust/chip8_assembler/target/debug/chip8_assembler: /home/erjon/Documents/rust/chip8_assembler/src/assembler.rs /home/erjon/Documents/rust/chip8_assembler/src/main.rs
+/home/joni/Documents/Coding/Rust/Github/chip8_assembler/target/debug/chip8_assembler: /home/joni/Documents/Coding/Rust/Github/chip8_assembler/src/assembler.rs /home/joni/Documents/Coding/Rust/Github/chip8_assembler/src/main.rs
