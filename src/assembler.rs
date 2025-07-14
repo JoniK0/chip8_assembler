@@ -11,7 +11,7 @@ where
     let file = std::fs::read_to_string(path).expect("Error: file couldnt be found");
 
     let mut program: Vec<Vec<&str>> = vec![];
-    let mut machine_code: Vec<usize> = vec![];
+    let mut machine_code: Vec<u8> = vec![];
     let mut label_map: HashMap<&str, usize> = HashMap::new();
 
     for line in file.lines() {
@@ -43,10 +43,26 @@ where
     for (_i, line) in program.iter().enumerate() {
         match line.as_slice() {
             [e1] => {
-                machine_code.push(match_one_element(e1));
+                match match_one_element(e1){
+                    Some(bytes) => {
+                        machine_code.push(bytes.0);
+                        machine_code.push(bytes.1);
+                    }
+                    _ => ()
+                }
+                //machine_code.push(match_one_element(e1).0);
+                //machine_code.push(match_one_element(e1).1);
             }
             [e1, e2] => {
-                machine_code.push(match_two_elements((e1, e2), &label_map) as usize)
+                match match_two_elements((e1, e2), &label_map) {
+                    Some(bytes) => {
+                        machine_code.push(bytes.0);
+                        machine_code.push(bytes.1);
+                    }
+                    _ => ()
+                }
+                // machine_code.push(match_two_elements((e1, e2), &label_map).0);
+                // machine_code.push(match_two_elements((e1, e2), &label_map).1);
             },
             [_e1, _e2, _e3] => (),
             _ => (),
@@ -57,62 +73,69 @@ where
     println!("Label map: {:?}", label_map);
     println!("machine_code: {:?}", machine_code);
 
-    write_to_hex();
+    write_to_hex(&machine_code);
 }
 
-fn match_one_element(element: &str) -> usize{
+fn match_one_element(element: &str) -> Option<(u8, u8)>{
     match element {
-        "clear" => { return 0x00E0; }
-        "ret"   => { return 0x00EE; }
-        _ => {return 0;}
+        "clear" => { return Some((0x00, 0xE0)); }
+        "ret"   => { return Some((0x00, 0xEE)); }
+        _ => {return None;}
     }
 }
 
-fn match_two_elements(elements: (&str, &str), label_map: &HashMap<&str, usize>) -> u16 {
+fn match_two_elements(elements: (&str, &str), label_map: &HashMap<&str, usize>) -> Option<(u8,u8)> {
     //println!("elements {:?}", elements);
     match elements {
         ("jump", address) => {
             println!("instr: {:?}", get_jump_instr(address, label_map));
-            return get_jump_instr(address, label_map);
+            return Some(get_jump_instr(address, label_map));
         }
         ("call", address) => {
-            return get_call_instr(address, label_map);
+            return Some(get_call_instr(address, label_map));
         }
-        _ => return 0,
+        _ => return None,
     }
 }
 
 
-fn get_call_instr(address: &str, label_map: &HashMap<&str, usize>) -> u16{
+fn get_call_instr(address: &str, label_map: &HashMap<&str, usize>) -> (u8, u8){
     if label_map.contains_key(address){
         let instr = format!("2{:02x}", label_map.get(address).unwrap());
-        //let test: u16 = instr.parse().unwrap();
-        return u16::from_str_radix(&instr[..], 16).unwrap();
+        let bytes = get_bytes(instr);
+        return (bytes.0, bytes.1);
     }
     else{
         let addr: usize = address.parse().unwrap();
         let string = format!("2{:x}",addr);
-        //let parsed: u16 = string.parse().unwrap();
-        return u16::from_str_radix(&string[..], 16).unwrap();
+        let bytes = get_bytes(string);
+        return (bytes.0, bytes.1);
     }
     
 }
 
-fn get_jump_instr(address: &str, label_map: &HashMap<&str, usize>) -> u16{
+fn get_bytes(instruction: String) -> (u8, u8){
+    let bytes = instruction.split_at(2);
+    return (u8::from_str_radix(&bytes.0[..], 16).unwrap(), u8::from_str_radix(&bytes.1[..], 16).unwrap())
+}
+
+fn get_jump_instr(address: &str, label_map: &HashMap<&str, usize>) -> (u8, u8){
     if label_map.contains_key(address) {
         let instr = format!("1{:02x}", label_map.get(address).unwrap());
-        //let test: u16 = instr.parse().unwrap();
-        return u16::from_str_radix(&instr[..], 16).unwrap();
+        let bytes = instr.split_at(2);
+        //println!("higher byte {:?}, lower byte {:?}", higherbyte.0, higherbyte.1);
+        return (u8::from_str_radix(&bytes.0[..], 16).unwrap(),u8::from_str_radix(&bytes.1[..], 16).unwrap());
     }
     else{
         let addr: usize = address.parse().unwrap();
         let string = format!("1{:x}",addr); 
+        let bytes = get_bytes(string);
         //let instr = format!("1{:x}",addr).parse().unwrap();
-        return u16::from_str_radix(&string[..], 16).unwrap();
+        return (bytes.0, bytes.1);
     }
 }
 
-fn write_to_hex(){
+fn write_to_hex(code: &Vec<u8>){
     let mut file = File::create("output/output.bin").expect("couldnt create file");
-    let _ = file.write_all(&vec![128, 128, 224]);
+    let _ = file.write_all(code);
 }
